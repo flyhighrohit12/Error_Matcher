@@ -120,10 +120,8 @@ def add_new_entry(error: str, solution: str, df: pd.DataFrame) -> pd.DataFrame:
     logging.info(f"New entry added successfully: {error[:50]}...")
     return df
 
-# Load data
+# Load data and create vectorizer
 df = load_data(st.session_state.data_version)
-
-# Create initial TF-IDF vectorizer
 vectorizer, tfidf_matrix = create_tfidf_vectorizer(df['Preprocessed_Error'])
 
 # Custom CSS
@@ -254,12 +252,11 @@ with tab2:
                         # Add current results to excluded indices
                         st.session_state.excluded_indices.extend([df.index.get_loc(match.name) for match, _ in top_matches])
                         st.warning("We're sorry the recommendations weren't helpful. We'll try to provide different suggestions.")
-                        st.experimental_rerun()
             else:
                 st.warning("No satisfactory matches found. This query will be added to our unanswered list.")
                 df = add_new_entry(user_input, '', df)
+                vectorizer, tfidf_matrix = create_tfidf_vectorizer(df['Preprocessed_Error'])
                 st.success("Query added to unanswered list. You can provide a solution in the 'Unanswered Queries' tab.")
-                st.experimental_rerun()
         else:
             st.warning("Please enter an error message.")
         
@@ -279,7 +276,8 @@ with tab3:
                     df.to_csv(MAIN_DATA_FILE, index=False)
                     st.session_state.data_version += 1  # Increment data version to force reload
                     st.success("Solution added successfully! It will now be available for recommendations.")
-                    st.experimental_rerun()
+                    df = load_data(st.session_state.data_version)
+                    vectorizer, tfidf_matrix = create_tfidf_vectorizer(df['Preprocessed_Error'])
     else:
         st.info("No unanswered queries at the moment.")
 
